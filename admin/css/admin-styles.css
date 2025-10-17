@@ -1,0 +1,69 @@
+/* Skate Spots Admin Styles */
+
+.wrap .subsubsub {
+    margin-top: 20px;
+}
+
+/* Status badges */
+.status-0 {
+    display: inline-block;
+    padding: 4px 12px;
+    background: #ffc107;
+    color: #000;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-1 {
+    display: inline-block;
+    padding: 4px 12px;
+    background: #28a745;
+    color: #fff;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-2 {
+    display: inline-block;
+    padding: 4px 12px;
+    background: #dc3545;
+    color: #fff;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Table improvements */
+.wp-list-table td {
+    vertical-align: middle;
+}
+
+.wp-list-table td form {
+    margin: 2px;
+}
+
+.wp-list-table td .button-small {
+    padding: 4px 10px;
+    font-size: 12px;
+    height: auto;
+    line-height: 1.5;
+}
+
+/* Action buttons */
+.wp-list-table .button-link-delete {
+    color: #a00;
+    border-color: #a00;
+}
+
+.wp-list-table .button-link-delete:hover {
+    background: #a00;
+    color: #fff;
+    border-color: #a00;
+}
+
+/* Notices */
+.notice {
+    margin: 15px 0;
+}
