@@ -97,7 +97,7 @@ class Skate_Spots_Frontend_Forms {
                     
                     <div class="form-group">
                         <label for="spot_country">Country *</label>
-                        <input type="text" id="spot_country" name="country" required>
+                        <input type="text" id="spot_country" name="country" required placeholder="U.S.A" value="U.S.A">
                     </div>
                 </div>
                 
