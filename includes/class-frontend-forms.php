@@ -57,7 +57,7 @@ class Skate_Spots_Frontend_Forms {
                 <div id="form-messages"></div>
                 
                 <div class="form-info">
-                    <strong>ℹ️ Location Info:</strong> Enter the street address, city, and country. We'll automatically find the coordinates to place your spot on the map.
+                    <strong>ℹ️ Location Info:</strong> Enter the complete address details. We'll automatically find the GPS coordinates to place your spot on the map. The more details you provide (state and zip code), the more accurate the location will be.
                 </div>
                 
                 <div class="form-group">
@@ -80,6 +80,19 @@ class Skate_Spots_Frontend_Forms {
                     <div class="form-group">
                         <label for="spot_city">City *</label>
                         <input type="text" id="spot_city" name="city" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="spot_state">State/Province</label>
+                        <input type="text" id="spot_state" name="state">
+                        <small>e.g., California, Ontario</small>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="spot_zip">Zip/Postal Code</label>
+                        <input type="text" id="spot_zip" name="zip">
                     </div>
                     
                     <div class="form-group">
@@ -163,12 +176,20 @@ class Skate_Spots_Frontend_Forms {
         // Geocode the address to get coordinates
         $address = sanitize_text_field($_POST['address']);
         $city = sanitize_text_field($_POST['city']);
+        $state = sanitize_text_field($_POST['state']);
+        $zip = sanitize_text_field($_POST['zip']);
         $country = sanitize_text_field($_POST['country']);
         
         // Build full address for geocoding
         $full_address = $address;
         if (!empty($city)) {
             $full_address .= ', ' . $city;
+        }
+        if (!empty($state)) {
+            $full_address .= ', ' . $state;
+        }
+        if (!empty($zip)) {
+            $full_address .= ' ' . $zip;
         }
         if (!empty($country)) {
             $full_address .= ', ' . $country;
@@ -188,6 +209,8 @@ class Skate_Spots_Frontend_Forms {
             'longitude' => $coordinates['lon'],
             'address' => $address,
             'city' => $city,
+            'state' => $state,
+            'zip' => $zip,
             'country' => $country,
             'spot_type' => sanitize_text_field($_POST['spot_type']),
             'image_url' => esc_url_raw($_POST['image_url']),

@@ -26,6 +26,8 @@ class Skate_Spots_Database {
             longitude decimal(11, 8),
             address varchar(255),
             city varchar(100),
+            state varchar(100),
+            zip varchar(20),
             country varchar(100),
             spot_type varchar(100),
             image_url varchar(500),
@@ -34,7 +36,8 @@ class Skate_Spots_Database {
             status tinyint(1) DEFAULT 0 COMMENT '0=pending, 1=approved, 2=rejected',
             PRIMARY KEY  (id),
             KEY status (status),
-            KEY city (city)
+            KEY city (city),
+            KEY state (state)
         ) $charset_collate;";
         
         // Movies Table

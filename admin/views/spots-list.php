@@ -53,7 +53,7 @@ if (!defined('ABSPATH')) {
             <tr>
                 <th>ID</th>
                 <th>Title</th>
-                <th>City/Country</th>
+                <th>Location</th>
                 <th>Type</th>
                 <th>Coordinates</th>
                 <th>Status</th>
@@ -73,9 +73,16 @@ if (!defined('ABSPATH')) {
                             <?php endif; ?>
                         </td>
                         <td>
-                            <?php echo esc_html($spot->city); ?>
-                            <?php if ($spot->country): ?>
-                                , <?php echo esc_html($spot->country); ?>
+                            <?php 
+                            $location_parts = array();
+                            if (!empty($spot->city)) $location_parts[] = esc_html($spot->city);
+                            if (!empty($spot->state)) $location_parts[] = esc_html($spot->state);
+                            if (!empty($spot->zip)) $location_parts[] = esc_html($spot->zip);
+                            if (!empty($spot->country)) $location_parts[] = esc_html($spot->country);
+                            echo implode(', ', $location_parts);
+                            ?>
+                            <?php if (!empty($spot->address)): ?>
+                                <br><small><?php echo esc_html($spot->address); ?></small>
                             <?php endif; ?>
                         </td>
                         <td><?php echo esc_html($spot->spot_type); ?></td>

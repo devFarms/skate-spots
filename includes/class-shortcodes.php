@@ -59,6 +59,8 @@ class Skate_Spots_Shortcodes {
                     if (spot.address) {
                         popupContent += '<p><strong>Address:</strong> ' + spot.address;
                         if (spot.city) popupContent += ', ' + spot.city;
+                        if (spot.state) popupContent += ', ' + spot.state;
+                        if (spot.zip) popupContent += ' ' + spot.zip;
                         if (spot.country) popupContent += ', ' + spot.country;
                         popupContent += '</p>';
                     }

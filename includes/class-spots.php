@@ -28,6 +28,8 @@ class Skate_Spots {
             'longitude' => null,
             'address' => '',
             'city' => '',
+            'state' => '',
+            'zip' => '',
             'country' => '',
             'spot_type' => '',
             'image_url' => '',
@@ -39,7 +41,7 @@ class Skate_Spots {
         $result = $wpdb->insert(
             $table,
             $data,
-            array('%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%s', '%d')
+            array('%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d')
         );
         
         if ($result) {
