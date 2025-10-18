@@ -101,6 +101,16 @@
     margin-bottom: 20px;
 }
 
+.form-info {
+    padding: 15px;
+    background: #e7f3ff;
+    border: 1px solid #b3d9ff;
+    border-radius: 4px;
+    color: #004085;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
 .success-message {
     padding: 15px;
     background: #d4edda;
