@@ -21,47 +21,106 @@ class Skate_Spots_Shortcodes {
      */
     public function spots_map($atts) {
         $atts = shortcode_atts(array(
-            'height' => '500px'
+            'height' => '500px',
+            'zoom' => 13
         ), $atts);
         
+        // Get only approved spots (status = 1)
         $spots = Skate_Spots::get_approved(1000);
-        $spots_json = json_encode($spots);
+        
+        // Filter out spots without coordinates
+        $spots = array_filter($spots, function($spot) {
+            return !empty($spot->latitude) && !empty($spot->longitude);
+        });
+        
+        // Sort by created_at DESC to get newest first
+        usort($spots, function($a, $b) {
+            return strtotime($b->created_at) - strtotime($a->created_at);
+        });
+        
+        $spots_json = json_encode(array_values($spots));
+        $default_zoom = intval($atts['zoom']);
         
         ob_start();
         ?>
         <div class="skate-spots-map-container">
             <div id="skate-spots-map" style="height: <?php echo esc_attr($atts['height']); ?>; width: 100%;"></div>
+            <?php if (empty($spots)): ?>
+                <p class="map-notice">No approved spots to display yet. Be the first to add one!</p>
+            <?php else: ?>
+                <p class="map-notice">Showing <?php echo count($spots); ?> approved spot<?php echo count($spots) != 1 ? 's' : ''; ?></p>
+            <?php endif; ?>
         </div>
         <script>
         jQuery(document).ready(function($) {
             var spots = <?php echo $spots_json; ?>;
+            var defaultZoom = <?php echo $default_zoom; ?>;
             
-            // Initialize map
-            var map = L.map('skate-spots-map').setView([37.7749, -122.4194], 4);
+            if (spots.length === 0) {
+                // No spots to display
+                $('#skate-spots-map').html('<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f5f5f5; color: #666;"><p>No spots available yet</p></div>');
+                return;
+            }
+            
+            // Get the most recent spot (first in array after sorting)
+            var latestSpot = spots[0];
+            var centerLat = parseFloat(latestSpot.latitude);
+            var centerLng = parseFloat(latestSpot.longitude);
+            
+            // Initialize map centered on the latest spot
+            var map = L.map('skate-spots-map').setView([centerLat, centerLng], defaultZoom);
             
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors',
-                maxZoom: 19
+                maxZoom: 19,
+                minZoom: 2
             }).addTo(map);
             
-            // Add markers
-            spots.forEach(function(spot) {
+            // Array to store all markers for bounds
+            var markers = [];
+            
+            // Add markers for all spots
+            spots.forEach(function(spot, index) {
                 if (spot.latitude && spot.longitude) {
-                    var marker = L.marker([parseFloat(spot.latitude), parseFloat(spot.longitude)]);
+                    var lat = parseFloat(spot.latitude);
+                    var lng = parseFloat(spot.longitude);
                     
-                    var popupContent = '<div class="spot-popup">' +
-                        '<h3>' + spot.title + '</h3>';
+                    // Create custom icon for the latest spot (larger, different color)
+                    var markerIcon = L.icon({
+                        iconUrl: index === 0 
+                            ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png'
+                            : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+                        iconSize: index === 0 ? [30, 49] : [25, 41],
+                        iconAnchor: index === 0 ? [15, 49] : [12, 41],
+                        popupAnchor: [1, -34],
+                        shadowSize: [41, 41]
+                    });
+                    
+                    var marker = L.marker([lat, lng], {icon: markerIcon});
+                    
+                    var popupContent = '<div class="spot-popup">';
+                    
+                    // Add "NEW!" badge for the latest spot
+                    if (index === 0) {
+                        popupContent += '<span class="new-badge">🆕 NEWEST SPOT</span>';
+                    }
+                    
+                    popupContent += '<h3>' + spot.title + '</h3>';
                     
                     if (spot.description) {
                         popupContent += '<p>' + spot.description + '</p>';
                     }
                     
                     if (spot.address) {
-                        popupContent += '<p><strong>Address:</strong> ' + spot.address;
-                        if (spot.city) popupContent += ', ' + spot.city;
-                        if (spot.state) popupContent += ', ' + spot.state;
-                        if (spot.zip) popupContent += ' ' + spot.zip;
-                        if (spot.country) popupContent += ', ' + spot.country;
+                        popupContent += '<p><strong>Address:</strong><br>' + spot.address;
+                        if (spot.city || spot.state || spot.zip || spot.country) {
+                            popupContent += '<br>';
+                            if (spot.city) popupContent += spot.city;
+                            if (spot.state) popupContent += ', ' + spot.state;
+                            if (spot.zip) popupContent += ' ' + spot.zip;
+                            if (spot.country) popupContent += '<br>' + spot.country;
+                        }
                         popupContent += '</p>';
                     }
                     
@@ -70,15 +129,42 @@ class Skate_Spots_Shortcodes {
                     }
                     
                     if (spot.image_url) {
-                        popupContent += '<img src="' + spot.image_url + '" style="max-width: 200px; height: auto;" />';
+                        popupContent += '<img src="' + spot.image_url + '" style="max-width: 200px; height: auto; border-radius: 4px; margin-top: 10px;" />';
                     }
                     
                     popupContent += '</div>';
                     
                     marker.bindPopup(popupContent);
                     marker.addTo(map);
+                    markers.push(marker);
+                    
+                    // Auto-open popup for the latest spot
+                    if (index === 0) {
+                        marker.openPopup();
+                    }
                 }
             });
+            
+            // If there are multiple spots, add a button to fit all markers in view
+            if (spots.length > 1) {
+                var fitBoundsControl = L.control({position: 'topright'});
+                
+                fitBoundsControl.onAdd = function(map) {
+                    var div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+                    div.innerHTML = '<a href="#" title="Show all spots" style="background: white; padding: 5px 10px; text-decoration: none; display: block; color: #333; font-weight: bold;">Show All</a>';
+                    
+                    div.onclick = function(e) {
+                        e.preventDefault();
+                        var group = new L.featureGroup(markers);
+                        map.fitBounds(group.getBounds().pad(0.1));
+                        return false;
+                    };
+                    
+                    return div;
+                };
+                
+                fitBoundsControl.addTo(map);
+            }
         });
         </script>
         <?php

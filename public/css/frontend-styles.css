@@ -154,6 +154,13 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
+.map-notice {
+    text-align: center;
+    margin-top: 10px;
+    color: #666;
+    font-size: 14px;
+}
+
 /* Spot Popup */
 .spot-popup h3 {
     margin-top: 0;
@@ -164,11 +171,33 @@
 .spot-popup p {
     margin: 5px 0;
     font-size: 14px;
+    line-height: 1.4;
 }
 
 .spot-popup img {
     margin-top: 10px;
     border-radius: 4px;
+}
+
+.spot-popup .new-badge {
+    display: inline-block;
+    background: #ff4444;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+/* Leaflet popup customization */
+.leaflet-popup-content-wrapper {
+    border-radius: 8px;
+}
+
+.leaflet-popup-content {
+    margin: 15px;
+    min-width: 200px;
 }
 
 /* Lists */
