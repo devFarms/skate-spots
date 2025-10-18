@@ -56,6 +56,10 @@ class Skate_Spots_Frontend_Forms {
                 
                 <div id="form-messages"></div>
                 
+                <div class="form-info">
+                    <strong>ℹ️ Location Info:</strong> Enter the street address, city, and country. We'll automatically find the coordinates to place your spot on the map.
+                </div>
+                
                 <div class="form-group">
                     <label for="spot_title">Title *</label>
                     <input type="text" id="spot_title" name="title" required>
@@ -66,32 +70,21 @@ class Skate_Spots_Frontend_Forms {
                     <textarea id="spot_description" name="description" rows="4"></textarea>
                 </div>
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="spot_latitude">Latitude</label>
-                        <input type="number" id="spot_latitude" name="latitude" step="0.00000001">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="spot_longitude">Longitude</label>
-                        <input type="number" id="spot_longitude" name="longitude" step="0.00000001">
-                    </div>
-                </div>
-                
                 <div class="form-group">
-                    <label for="spot_address">Address</label>
-                    <input type="text" id="spot_address" name="address">
+                    <label for="spot_address">Street Address *</label>
+                    <input type="text" id="spot_address" name="address" required>
+                    <small>e.g., 123 Main Street</small>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="spot_city">City</label>
-                        <input type="text" id="spot_city" name="city">
+                        <label for="spot_city">City *</label>
+                        <input type="text" id="spot_city" name="city" required>
                     </div>
                     
                     <div class="form-group">
-                        <label for="spot_country">Country</label>
-                        <input type="text" id="spot_country" name="country">
+                        <label for="spot_country">Country *</label>
+                        <input type="text" id="spot_country" name="country" required>
                     </div>
                 </div>
                 
@@ -122,6 +115,12 @@ class Skate_Spots_Frontend_Forms {
             $('#skate-spot-form').on('submit', function(e) {
                 e.preventDefault();
                 
+                var $submitBtn = $(this).find('.submit-btn');
+                var originalText = $submitBtn.text();
+                
+                // Disable button and show loading state
+                $submitBtn.prop('disabled', true).text('Geocoding address...');
+                
                 var formData = new FormData(this);
                 formData.append('action', 'submit_skate_spot');
                 
@@ -138,6 +137,12 @@ class Skate_Spots_Frontend_Forms {
                         } else {
                             $('#form-messages').html('<div class="error-message">' + response.data.message + '</div>');
                         }
+                        // Re-enable button
+                        $submitBtn.prop('disabled', false).text(originalText);
+                    },
+                    error: function() {
+                        $('#form-messages').html('<div class="error-message">An error occurred. Please try again.</div>');
+                        $submitBtn.prop('disabled', false).text(originalText);
                     }
                 });
             });
@@ -155,14 +160,35 @@ class Skate_Spots_Frontend_Forms {
         
         $status = $this->can_bypass_approval() ? 1 : 0;
         
+        // Geocode the address to get coordinates
+        $address = sanitize_text_field($_POST['address']);
+        $city = sanitize_text_field($_POST['city']);
+        $country = sanitize_text_field($_POST['country']);
+        
+        // Build full address for geocoding
+        $full_address = $address;
+        if (!empty($city)) {
+            $full_address .= ', ' . $city;
+        }
+        if (!empty($country)) {
+            $full_address .= ', ' . $country;
+        }
+        
+        // Geocode the address
+        $coordinates = $this->geocode_address($full_address);
+        
+        if (!$coordinates) {
+            wp_send_json_error(array('message' => 'Unable to geocode the address. Please check the address and try again.'));
+        }
+        
         $data = array(
             'title' => sanitize_text_field($_POST['title']),
             'description' => sanitize_textarea_field($_POST['description']),
-            'latitude' => !empty($_POST['latitude']) ? floatval($_POST['latitude']) : null,
-            'longitude' => !empty($_POST['longitude']) ? floatval($_POST['longitude']) : null,
-            'address' => sanitize_text_field($_POST['address']),
-            'city' => sanitize_text_field($_POST['city']),
-            'country' => sanitize_text_field($_POST['country']),
+            'latitude' => $coordinates['lat'],
+            'longitude' => $coordinates['lon'],
+            'address' => $address,
+            'city' => $city,
+            'country' => $country,
             'spot_type' => sanitize_text_field($_POST['spot_type']),
             'image_url' => esc_url_raw($_POST['image_url']),
             'status' => $status
@@ -179,6 +205,47 @@ class Skate_Spots_Frontend_Forms {
         } else {
             wp_send_json_error(array('message' => 'Failed to submit spot. Please try again.'));
         }
+    }
+    
+    /**
+     * Geocode an address to lat/lon coordinates
+     * Using Nominatim (OpenStreetMap) - free, no API key required
+     */
+    private function geocode_address($address) {
+        // Use WordPress HTTP API
+        $url = 'https://nominatim.openstreetmap.org/search';
+        
+        $args = array(
+            'q' => $address,
+            'format' => 'json',
+            'limit' => 1
+        );
+        
+        $url = add_query_arg($args, $url);
+        
+        // Set user agent (required by Nominatim)
+        $response = wp_remote_get($url, array(
+            'timeout' => 10,
+            'headers' => array(
+                'User-Agent' => 'WordPress Skate Spots Plugin'
+            )
+        ));
+        
+        if (is_wp_error($response)) {
+            return false;
+        }
+        
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body);
+        
+        if (empty($data) || !isset($data[0]->lat) || !isset($data[0]->lon)) {
+            return false;
+        }
+        
+        return array(
+            'lat' => floatval($data[0]->lat),
+            'lon' => floatval($data[0]->lon)
+        );
     }
     
     /**
